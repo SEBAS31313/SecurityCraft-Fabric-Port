@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "group": "securitycraft:wooden_buttons",
+  "ingredients": [
+    "securitycraft:reinforced_crimson_planks"
+  ],
+  "result": {
+    "id": "securitycraft:reinforced_crimson_button"
+  }
+}

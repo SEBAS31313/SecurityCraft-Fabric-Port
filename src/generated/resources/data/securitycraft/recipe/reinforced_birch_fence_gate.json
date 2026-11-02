@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "group": "securitycraft:reinforced_fence_gates",
+  "key": {
+    "M": "securitycraft:reinforced_birch_planks",
+    "S": "#c:rods/wooden"
+  },
+  "pattern": [
+    "SMS",
+    "SMS"
+  ],
+  "result": {
+    "id": "securitycraft:reinforced_birch_fence_gate"
+  }
+}

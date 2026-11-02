@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "category": "blocks",
+  "experience": 0.35,
+  "ingredient": "securitycraft:reinforced_clay",
+  "result": {
+    "id": "securitycraft:reinforced_hardened_clay"
+  }
+}

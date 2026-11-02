@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": "#c:ingots/iron",
+    "R": "#c:dusts/redstone",
+    "T": "minecraft:redstone_torch"
+  },
+  "pattern": [
+    "III",
+    "ITI",
+    "IRI"
+  ],
+  "result": {
+    "id": "securitycraft:portable_radar"
+  }
+}

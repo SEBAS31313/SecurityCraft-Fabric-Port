@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "G": "#c:gunpowders",
+    "I": "#c:ingots/iron",
+    "S": "#c:rods/wooden"
+  },
+  "pattern": [
+    "I I",
+    "ISI",
+    "IGI"
+  ],
+  "result": {
+    "count": 6,
+    "id": "securitycraft:track_mine"
+  }
+}

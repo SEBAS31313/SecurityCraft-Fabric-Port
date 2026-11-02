@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    "minecraft:stone_bricks",
+    "securitycraft:reinforced_moss_block"
+  ],
+  "result": {
+    "id": "securitycraft:reinforced_mossy_stone_bricks"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "securitycraft:reinforced_stone",
+  "result": {
+    "id": "securitycraft:reinforced_stone_brick_stairs"
+  }
+}

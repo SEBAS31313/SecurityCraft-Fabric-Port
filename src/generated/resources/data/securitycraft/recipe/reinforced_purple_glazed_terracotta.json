@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "category": "blocks",
+  "experience": 0.1,
+  "ingredient": "securitycraft:reinforced_purple_terracotta",
+  "result": {
+    "id": "securitycraft:reinforced_purple_glazed_terracotta"
+  }
+}

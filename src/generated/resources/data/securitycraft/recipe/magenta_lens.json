@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "securitycraft:lens",
+  "key": {
+    "P": "securitycraft:reinforced_magenta_stained_glass_pane"
+  },
+  "pattern": [
+    " P",
+    "P ",
+    " P"
+  ],
+  "result": {
+    "components": {
+      "minecraft:dyed_color": -3715395
+    },
+    "id": "securitycraft:lens"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_dye",
+  "dye": "#minecraft:dyes",
+  "group": "briefcase",
+  "result": {
+    "id": "securitycraft:briefcase"
+  },
+  "target": "securitycraft:briefcase"
+}

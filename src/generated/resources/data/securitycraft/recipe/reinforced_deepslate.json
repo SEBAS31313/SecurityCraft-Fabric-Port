@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "category": "blocks",
+  "experience": 0.1,
+  "ingredient": "securitycraft:reinforced_cobbled_deepslate",
+  "result": {
+    "id": "securitycraft:reinforced_deepslate"
+  }
+}

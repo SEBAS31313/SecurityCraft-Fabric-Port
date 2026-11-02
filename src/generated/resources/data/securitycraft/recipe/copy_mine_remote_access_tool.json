@@ -1,0 +1,6 @@
+{
+  "type": "securitycraft:copy_position_component_item_recipe",
+  "component_type": "securitycraft:bound_mines",
+  "input": "securitycraft:remote_access_mine",
+  "result": "securitycraft:remote_access_mine"
+}

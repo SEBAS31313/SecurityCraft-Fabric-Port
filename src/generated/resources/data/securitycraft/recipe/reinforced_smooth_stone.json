@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "category": "blocks",
+  "experience": 0.1,
+  "ingredient": "securitycraft:reinforced_stone",
+  "result": {
+    "id": "securitycraft:reinforced_smooth_stone"
+  }
+}

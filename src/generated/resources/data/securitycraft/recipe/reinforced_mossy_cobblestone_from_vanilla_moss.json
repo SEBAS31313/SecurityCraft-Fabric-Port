@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    "securitycraft:reinforced_cobblestone",
+    "minecraft:moss_block"
+  ],
+  "result": {
+    "id": "securitycraft:reinforced_mossy_cobblestone"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "P": "securitycraft:portable_radar",
+    "R": "#c:dusts/redstone",
+    "S": "#securitycraft:reinforced/stone_crafting_materials"
+  },
+  "pattern": [
+    "SPS",
+    "SRS",
+    "SSS"
+  ],
+  "result": {
+    "id": "securitycraft:username_logger"
+  }
+}

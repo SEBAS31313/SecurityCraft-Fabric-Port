@@ -1,0 +1,90 @@
+package net.geforcemods.securitycraft.entity.camera;
+
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.minecraft.client.SectionUpdateTracker.SectionDirtyState;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher.RenderSection;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.Level;
+
+public class CameraViewAreaExtension {
+	private static final Long2ObjectOpenHashMap<RenderSection> SECTIONS = new Long2ObjectOpenHashMap<>();
+	private static final Long2ObjectOpenHashMap<SectionDirtyState> DIRTY_STATES = new Long2ObjectOpenHashMap<>();
+	private static SectionRenderDispatcher sectionRenderDispatcher;
+	private static int minSectionY = 0;
+	private static int maxSectionY = 1; //Default of 1 prevents crash when these height limits aren't set correctly
+
+	private CameraViewAreaExtension() {}
+
+	public static void allChanged(SectionRenderDispatcher newFactory, Level level) {
+		sectionRenderDispatcher = newFactory;
+		minSectionY = level.getMinSectionY();
+		maxSectionY = level.getMaxSectionY();
+	}
+
+	public static RenderSection provideSection(long sectionPos) {
+		return SECTIONS.computeIfAbsent(sectionPos, CameraViewAreaExtension::createSection);
+	}
+
+	private static RenderSection createSection(long sectionPos) {
+		RenderSection renderSection = sectionRenderDispatcher.new RenderSection(0, sectionPos);
+
+		DIRTY_STATES.put(sectionPos, new SectionDirtyState(true, false, sectionPos));
+		return renderSection;
+	}
+
+	public static void setDirty(int sectionX, int sectionY, int sectionZ, boolean playerChanged) {
+		long sectionPos = SectionPos.asLong(sectionX, sectionY, sectionZ);
+
+		if (SECTIONS.containsKey(sectionPos)) {
+			SectionDirtyState dirtyState = DIRTY_STATES.putIfAbsent(sectionPos, new SectionDirtyState(true, false, sectionPos));
+
+			if (dirtyState != null)
+				dirtyState.setDirty(playerChanged);
+		}
+	}
+
+	public static SectionDirtyState getDirtyState(long sectionPos) {
+		return DIRTY_STATES.get(sectionPos);
+	}
+
+	public static void onChunkUnload(int sectionX, int sectionZ) {
+		for (int sectionY = minSectionY; sectionY < maxSectionY; sectionY++) {
+			long sectionPos = SectionPos.asLong(sectionX, sectionY, sectionZ);
+			RenderSection section = SECTIONS.get(sectionPos);
+
+			if (section != null) {
+				section.reset();
+				SECTIONS.remove(sectionPos);
+			}
+		}
+	}
+
+	public static SectionRenderDispatcher.RenderSection rawFetch(int cx, int cy, int cz, boolean generateNew) {
+		if (cy < minSectionY || cy >= maxSectionY)
+			return null;
+
+		return rawFetch(SectionPos.asLong(cx, cy, cz), generateNew);
+	}
+
+	public static SectionRenderDispatcher.RenderSection rawFetch(long sectionPos, boolean generateNew) {
+		return generateNew ? provideSection(sectionPos) : SECTIONS.get(sectionPos);
+	}
+
+	public static void clear() {
+		for (SectionRenderDispatcher.RenderSection section : SECTIONS.values()) {
+			section.reset();
+		}
+
+		SECTIONS.clear();
+		DIRTY_STATES.clear();
+	}
+
+	public static int minSectionY() {
+		return minSectionY;
+	}
+
+	public static int maxSectionY() {
+		return maxSectionY;
+	}
+}

@@ -1,0 +1,35 @@
+license="MIT https://github.com/Geforce132/${mod_name}/blob/master/LICENSE"
+issueTrackerURL="http://github.com/Geforce132/${mod_name}/issues"
+
+[[mods]]
+	modId="${mod_id}"
+	version="${mod_version}"
+	displayName="${mod_name}"
+	updateJSONURL="https://www.github.com/Geforce132/${mod_name}/raw/master/Updates/Forge.json"
+	description='''Adds a load of things to keep your house safe with and defend yourself from attackers.'''
+	displayURL="https://discord.gg/U8DvBAW"
+	credits="Thanks to all of you guys for your support!"
+	authors="${authors}"
+	enumExtensions="META-INF/enum_extensions.json"
+    bannerFile="sc_banner.png"
+    iconFile="sc_logo.png"
+
+[[mixins]]
+    config="${mod_id}.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neoforge_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="[${mc_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[modproperties.${mod_id}]
+    catalogueImageIcon="sc_logo.png"

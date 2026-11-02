@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "securitycraft:crystal_quartz",
+  "result": {
+    "id": "securitycraft:crystal_quartz_pillar"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "category": "blocks",
+  "experience": 0.1,
+  "ingredient": "securitycraft:crystal_quartz",
+  "result": {
+    "id": "securitycraft:smooth_crystal_quartz"
+  }
+}

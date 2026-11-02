@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "L": "minecraft:redstone_lamp",
+    "R": "securitycraft:portable_radar",
+    "S": "#c:rods/wooden"
+  },
+  "pattern": [
+    "L",
+    "R",
+    "S"
+  ],
+  "result": {
+    "id": "securitycraft:motion_activated_light"
+  }
+}

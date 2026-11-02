@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "securitycraft:reinforced_shelves",
+  "key": {
+    "L": "securitycraft:reinforced_stripped_birch_log"
+  },
+  "pattern": [
+    "LLL",
+    "   ",
+    "LLL"
+  ],
+  "result": {
+    "count": 6,
+    "id": "securitycraft:reinforced_birch_shelf"
+  }
+}

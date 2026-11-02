@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "S": "securitycraft:reinforced_nether_brick_slab"
+  },
+  "pattern": [
+    "S",
+    "S"
+  ],
+  "result": {
+    "id": "securitycraft:reinforced_chiseled_nether_bricks"
+  }
+}

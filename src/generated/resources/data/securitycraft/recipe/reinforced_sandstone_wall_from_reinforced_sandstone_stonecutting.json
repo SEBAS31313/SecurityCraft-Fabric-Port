@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "securitycraft:reinforced_sandstone",
+  "result": {
+    "id": "securitycraft:reinforced_sandstone_wall"
+  }
+}

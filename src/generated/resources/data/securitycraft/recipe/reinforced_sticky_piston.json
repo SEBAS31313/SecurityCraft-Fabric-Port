@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "P": "securitycraft:reinforced_piston",
+    "S": "#c:slime_balls"
+  },
+  "pattern": [
+    "S",
+    "P"
+  ],
+  "result": {
+    "id": "securitycraft:reinforced_sticky_piston"
+  }
+}

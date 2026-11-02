@@ -1,0 +1,106 @@
+package net.geforcemods.securitycraft.screen;
+
+import java.util.List;
+
+import net.geforcemods.securitycraft.SCContent;
+import net.geforcemods.securitycraft.SecurityCraft;
+import net.geforcemods.securitycraft.components.SavedBlockState;
+import net.geforcemods.securitycraft.inventory.DisguiseModuleMenu;
+import net.geforcemods.securitycraft.network.server.SetStateOnDisguiseModule;
+import net.geforcemods.securitycraft.screen.components.StateSelector;
+import net.geforcemods.securitycraft.util.IHasExtraAreas;
+import net.geforcemods.securitycraft.util.StandingOrWallType;
+import net.geforcemods.securitycraft.util.Utils;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.CommonColors;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.geforcemods.securitycraft.platform.Packets;
+
+public class DisguiseModuleScreen extends AbstractContainerScreen<DisguiseModuleMenu> implements IHasExtraAreas {
+	private static final Identifier TEXTURE = SecurityCraft.resLoc("textures/gui/container/customize1.png");
+	private final Component disguiseModuleName = Utils.localize(SCContent.DISGUISE_MODULE.get().getDescriptionId());
+	private StateSelector stateSelector;
+
+	public DisguiseModuleScreen(DisguiseModuleMenu menu, Inventory inv, Component title) {
+		super(menu, inv, title);
+	}
+
+	@Override
+	protected void init() {
+		super.init();
+
+		leftPos += 90;
+		stateSelector = addRenderableWidget(new StateSelector(menu, title, leftPos - 190, topPos + 7, 0, 200, 15, 176, -45));
+		stateSelector.init(width, height);
+	}
+
+	@Override
+	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
+		extractTooltip(guiGraphics, mouseX, mouseY);
+	}
+
+	@Override
+	protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+		guiGraphics.text(font, disguiseModuleName, imageWidth / 2 - font.width(disguiseModuleName) / 2, 6, CommonColors.DARK_GRAY, false);
+	}
+
+	@Override
+	public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float a) {
+		super.extractBackground(guiGraphics, mouseX, mouseY, a);
+		guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0.0F, 0.0F, imageWidth, imageHeight, 256, 256);
+
+		if (stateSelector != null)
+			stateSelector.extractBackground(guiGraphics, mouseX, mouseY, a);
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+		if (stateSelector != null && stateSelector.mouseDragged(event, dragX, dragY))
+			return true;
+
+		return super.mouseDragged(event, dragX, dragY);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event) {
+		if (stateSelector != null && stateSelector.mouseReleased(event))
+			return true;
+
+		return super.mouseReleased(event);
+	}
+
+	@Override
+	public void onClose() {
+		super.onClose();
+
+		ItemStack module = menu.getInventory().getModule();
+		BlockState state = Blocks.AIR.defaultBlockState();
+		StandingOrWallType standingOrWall = StandingOrWallType.NONE;
+
+		if (!menu.getSlot(0).getItem().isEmpty() && stateSelector.getState() != null) {
+			state = stateSelector.getState();
+			standingOrWall = stateSelector.getStandingOrWallType();
+		}
+
+		module.set(SCContent.SAVED_BLOCK_STATE.get(), new SavedBlockState(state, standingOrWall));
+		Packets.sendToServer(new SetStateOnDisguiseModule(state, standingOrWall));
+	}
+
+	@Override
+	public List<Rect2i> getExtraAreas() {
+		if (stateSelector != null)
+			return stateSelector.getGuiExtraAreas();
+		else
+			return List.of();
+	}
+}

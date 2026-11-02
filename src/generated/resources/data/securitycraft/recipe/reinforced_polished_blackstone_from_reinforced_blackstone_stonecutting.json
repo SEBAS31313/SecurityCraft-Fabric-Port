@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "securitycraft:reinforced_blackstone",
+  "result": {
+    "id": "securitycraft:reinforced_polished_blackstone"
+  }
+}

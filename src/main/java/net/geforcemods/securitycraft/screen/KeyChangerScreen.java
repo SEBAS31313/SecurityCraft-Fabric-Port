@@ -1,0 +1,128 @@
+package net.geforcemods.securitycraft.screen;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.mojang.blaze3d.platform.InputConstants;
+
+import net.geforcemods.securitycraft.SCContent;
+import net.geforcemods.securitycraft.SecurityCraft;
+import net.geforcemods.securitycraft.api.IPasscodeProtected;
+import net.geforcemods.securitycraft.misc.StillValid;
+import net.geforcemods.securitycraft.network.server.SetPasscode;
+import net.geforcemods.securitycraft.screen.components.ErrorMarkingEditBox;
+import net.geforcemods.securitycraft.util.PlayerUtils;
+import net.geforcemods.securitycraft.util.Utils;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.CommonColors;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.ContainerEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.geforcemods.securitycraft.platform.Packets;
+
+public class KeyChangerScreen extends Screen implements StillValid {
+	private static final Identifier TEXTURE = SecurityCraft.resLoc("textures/gui/container/blank.png");
+	private final Component ukcName = Utils.localize(SCContent.UNIVERSAL_KEY_CHANGER.get().getDescriptionId());
+	private final Component enterPasscode = Utils.localize("gui.securitycraft:universalKeyChanger.enterNewPasscode");
+	private final Component confirmPasscode = Utils.localize("gui.securitycraft:universalKeyChanger.confirmNewPasscode");
+	private int imageWidth = 176;
+	private int imageHeight = 166;
+	private int leftPos;
+	private int topPos;
+	private ErrorMarkingEditBox textboxNewPasscode;
+	private ErrorMarkingEditBox textboxConfirmPasscode;
+	private Button confirmButton;
+	private IPasscodeProtected passcodeProtected;
+
+	public KeyChangerScreen(IPasscodeProtected passcodeProtected) {
+		super(Component.translatable(SCContent.UNIVERSAL_KEY_CHANGER.get().getDescriptionId()));
+		this.passcodeProtected = passcodeProtected;
+	}
+
+	@Override
+	public void init() {
+		super.init();
+
+		leftPos = (width - imageWidth) / 2;
+		topPos = (height - imageHeight) / 2;
+
+		confirmButton = addRenderableWidget(Button.builder(Utils.localize("gui.securitycraft:universalKeyChanger.confirm"), this::confirmButtonClicked).pos(width / 2 - 52, height / 2 + 52).size(100, 20).build());
+		confirmButton.active = false;
+
+		textboxNewPasscode = addRenderableWidget(new ErrorMarkingEditBox(font, width / 2 - 57, height / 2 - 47, 110, 12, Component.empty()));
+		textboxNewPasscode.setMaxLength(20);
+		setInitialFocus(textboxNewPasscode);
+		textboxNewPasscode.setValidText(s -> s.matches("\\d*"));
+		textboxNewPasscode.setResponder(s -> updateConfirmButtonState());
+
+		textboxConfirmPasscode = addRenderableWidget(new ErrorMarkingEditBox(font, width / 2 - 57, height / 2 - 7, 110, 12, Component.empty()));
+		textboxConfirmPasscode.setMaxLength(20);
+		textboxConfirmPasscode.setValidText(s -> s.matches("\\d*"));
+		textboxConfirmPasscode.setResponder(s -> updateConfirmButtonState());
+	}
+
+	@Override
+	public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+		guiGraphics.text(font, ukcName, width / 2 - font.width(ukcName) / 2, topPos + 6, CommonColors.DARK_GRAY, false);
+		guiGraphics.text(font, enterPasscode, width / 2 - font.width(enterPasscode) / 2, topPos + 25, CommonColors.DARK_GRAY, false);
+		guiGraphics.text(font, confirmPasscode, width / 2 - font.width(confirmPasscode) / 2, topPos + 65, CommonColors.DARK_GRAY, false);
+	}
+
+	@Override
+	public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+		extractTransparentBackground(guiGraphics);
+		guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, leftPos, topPos, 0.0F, 0.0F, imageWidth, imageHeight, 256, 256);
+	}
+
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		if (minecraft.options.keyInventory.matches(InputConstants.getKey(event))) {
+			onClose();
+			return true;
+		}
+
+		return super.keyPressed(event);
+	}
+
+	@Override
+	public boolean isPauseScreen() {
+		return false;
+	}
+
+	private void updateConfirmButtonState() {
+		String newPasscode = textboxNewPasscode.getValue();
+		String passcodeConfirmation = textboxConfirmPasscode.getValue();
+
+		confirmButton.active = passcodeConfirmation != null && newPasscode != null && !passcodeConfirmation.isEmpty() && !newPasscode.isEmpty() && newPasscode.equals(passcodeConfirmation) && StringUtils.isNumeric(passcodeConfirmation) && StringUtils.isNumeric(newPasscode);
+	}
+
+	private void confirmButtonClicked(Button button) {
+		if (passcodeProtected instanceof BlockEntity be)
+			Packets.sendToServer(new SetPasscode(be.getBlockPos(), textboxNewPasscode.getValue()));
+		else if (passcodeProtected instanceof Entity entity)
+			Packets.sendToServer(new SetPasscode(entity.getId(), textboxNewPasscode.getValue()));
+
+		Minecraft.getInstance().player.closeContainer();
+		PlayerUtils.sendMessageToPlayer(Minecraft.getInstance().player, Utils.localize(SCContent.UNIVERSAL_KEY_CHANGER.get().getDescriptionId()), Utils.localize("messages.securitycraft:universalKeyChanger.passcodeChanged"), ChatFormatting.GREEN, true);
+	}
+
+	@Override
+	public boolean stillValid(Player player) {
+		if (passcodeProtected instanceof BlockEntity be)
+			return Container.stillValidBlockEntity(be, player);
+		else if (passcodeProtected instanceof ContainerEntity entity)
+			return entity.isChestVehicleStillValid(player);
+		else
+			return true;
+	}
+}

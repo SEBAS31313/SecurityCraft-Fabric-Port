@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "securitycraft_port_tests",
+  "version": "1.0.0",
+  "name": "SecurityCraft Fabric port integration tests",
+  "environment": "*",
+  "license": "MIT",
+  "entrypoints": {
+    "fabric-gametest": [
+      "net.geforcemods.securitycraft.gametest.CommonGameTests",
+      "net.geforcemods.securitycraft.gametest.InventoryGameTests",
+      "net.geforcemods.securitycraft.gametest.RegistryAndRecipeGameTests"
+    ],
+    "fabric-client-gametest": [
+      "net.geforcemods.securitycraft.gametest.ClientGameTests"
+    ]
+  },
+  "depends": {
+    "securitycraft": "*",
+    "fabric-api": "*"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "securitycraft:reinforced_cobbled_deepslate",
+  "result": {
+    "id": "securitycraft:reinforced_cobbled_deepslate_wall"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "I": "#c:ingots/iron",
+    "N": "minecraft:note_block",
+    "R": "#c:dusts/redstone"
+  },
+  "pattern": [
+    "IRN"
+  ],
+  "result": {
+    "id": "securitycraft:portable_tune_player"
+  }
+}

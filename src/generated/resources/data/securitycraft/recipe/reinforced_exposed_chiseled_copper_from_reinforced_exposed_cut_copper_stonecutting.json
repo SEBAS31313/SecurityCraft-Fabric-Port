@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": "securitycraft:reinforced_exposed_cut_copper",
+  "result": {
+    "id": "securitycraft:reinforced_exposed_chiseled_copper"
+  }
+}

@@ -1,0 +1,331 @@
+package net.geforcemods.securitycraft.entity.camera;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.joml.Matrix4f;
+import org.lwjgl.glfw.GLFW;
+
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.Window;
+
+import net.geforcemods.securitycraft.ConfigHandler;
+import net.geforcemods.securitycraft.SCContent;
+import net.geforcemods.securitycraft.SecurityCraft;
+import net.geforcemods.securitycraft.blockentities.FrameBlockEntity;
+import net.geforcemods.securitycraft.blockentities.SecurityCameraBlockEntity;
+import net.geforcemods.securitycraft.blocks.SecurityCameraBlock;
+import net.geforcemods.securitycraft.util.PlayerUtils;
+import net.geforcemods.securitycraft.util.Utils;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Camera;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.TextureFilteringMethod;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.SectionOcclusionGraph;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher.RenderSection;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.util.Mth;
+import net.minecraft.util.profiling.Profiler;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.attribute.EnvironmentAttributeProbe;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.Marker;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+
+public class FrameFeedHandler {
+	private static final Map<GlobalPos, CameraFeed> FRAME_CAMERA_FEEDS = new ConcurrentHashMap<>();
+	public static final Frustum DUMMY_FRUSTUM = new Frustum(new Matrix4f(), new Matrix4f());
+	private static GlobalPos currentlyCapturedCamera;
+	private static double lastFrameRendered = 0.0D;
+
+	public static void captureFrameFeeds(DeltaTracker partialTick) {
+		Minecraft mc = Minecraft.getInstance();
+		LocalPlayer player = mc.player;
+
+		if (player == null || player.connection.getLevel() == null || !hasFeeds() || !ConfigHandler.SERVER.frameFeedViewingEnabled.get() || isCapturingCamera())
+			return;
+
+		ProfilerFiller profiler = Profiler.get();
+		double currentTime = GLFW.glfwGetTime();
+		Map<GlobalPos, CameraFeed> activeFrameCameraFeeds = getFeedsToRender(mc, currentTime);
+
+		if (activeFrameCameraFeeds.isEmpty())
+			return;
+
+		lastFrameRendered = currentTime;
+		profiler.popPush("securitycraft:capture_frame_feed");
+
+		boolean resourcesLoaded = mc.isGameLoadFinished();
+		Level level = player.level();
+		Camera camera = mc.gameRenderer.mainCamera();
+		Entity oldCamEntity = mc.getCameraEntity();
+		Window window = mc.getWindow();
+		int oldWidth = window.getWidth();
+		int oldHeight = window.getHeight();
+		List<SectionRenderDispatcher.RenderSection> oldVisibleSections = mc.levelRenderer.visibleSections.clone();
+		int newFrameFeedViewDistance = getFrameFeedViewDistance(null);
+		double oldX = player.getX();
+		double oldXO = player.xOld;
+		double oldY = player.getY();
+		double oldYO = player.yOld;
+		double oldZ = player.getZ();
+		double oldZO = player.zOld;
+		float oldXRot = player.getXRot();
+		float oldXRotO = player.xRotO;
+		float oldYRot = player.getYRot();
+		float oldYRotO = player.yRotO;
+		float oldEyeHeight = camera.eyeHeight;
+		float oldEyeHeightO = camera.eyeHeightOld;
+		EnvironmentAttributeProbe oldAttributeProbe = camera.attributeProbe();
+		CameraType oldCameraType = mc.options.getCameraType();
+		Entity securityCamera = new Marker(EntityTypes.MARKER, level); //A separate entity is used instead of moving the player to allow the player to see themselves
+		RenderTarget oldMainRenderTarget = mc.gameRenderer.mainRenderTarget;
+		boolean oldIsPanoramicMode = camera.isPanoramicMode();
+
+		camera.eyeHeight = camera.eyeHeightOld = player.getDimensions(Pose.STANDING).eyeHeight();
+		mc.gameRenderer.setRenderBlockOutline(false);
+		camera.enablePanoramicMode();
+		window.setWidth(100);
+		window.setHeight(100); //Different width/height values seem to have no effect, although the ratio needs to be 1:1
+		mc.options.setCameraType(CameraType.FIRST_PERSON);
+
+		for (Entry<GlobalPos, CameraFeed> cameraView : activeFrameCameraFeeds.entrySet()) {
+			GlobalPos cameraPos = cameraView.getKey();
+
+			if (cameraPos.dimension().equals(level.dimension())) {
+				BlockPos pos = cameraPos.pos();
+
+				if (level.getBlockEntity(pos) instanceof SecurityCameraBlockEntity be) {
+					CameraFeed feed = cameraView.getValue();
+					RenderTarget newRenderTarget = feed.renderTarget();
+
+					if (!feed.hasFrameInFrustum())
+						continue;
+
+					Vec3 cameraEntityPos = new Vec3(pos.getX() + 0.5D, pos.getY() - player.getDimensions(Pose.STANDING).eyeHeight() + 0.5D, pos.getZ() + 0.5D);
+					float cameraXRot = be.getDefaultXRotation();
+					float cameraYRot = be.getDefaultYRotation(be.getBlockState().getValue(SecurityCameraBlock.FACING)) + (float) Mth.lerp(partialTick.getGameTimeDeltaPartialTick(false), be.getOriginalCameraRotation(), be.getCameraRotation()) * Mth.RAD_TO_DEG;
+
+					securityCamera.setPos(cameraEntityPos);
+					mc.setCameraEntity(securityCamera);
+					securityCamera.setXRot(cameraXRot);
+					securityCamera.setYRot(cameraYRot);
+					currentlyCapturedCamera = cameraPos;
+					feed.applyVisibleSections(mc.levelRenderer.visibleSections);
+					profiler.push("securitycraft:discover_frame_sections");
+					feed.discoverVisibleSections(cameraPos, newFrameFeedViewDistance);
+					mc.levelRenderer.skyRenderer().renderTarget = newRenderTarget; //Fixes the sky renderer caching and rendering to the original render target instead of the frame's one
+					camera.attributeProbe = feed.attributeProbe(); //Prevents writing the frame feed's position to the main attribute probe, so the main renderer doesn't consider the frame environment attributes when interpolating
+					camera.update(DeltaTracker.ONE); //Updates the camera position to be at the current camera entity
+					camera.attributeProbe().tick(level, camera.position()); //Notifies the camera's attribute probe with the new camera entity position, so the correct sky and fog color is used
+					mc.gameRenderer.globalSettingsUniform.update(oldWidth, oldHeight, mc.options.glintStrength().get(), level.getGameTime(), DeltaTracker.ONE, mc.options.getMenuBackgroundBlurriness(), camera.position(), mc.options.textureFiltering().get() == TextureFilteringMethod.RGSS); //The camera's position also needs to be updated in here
+					mc.gameRenderer.mainRenderTarget = newRenderTarget;
+
+					try {
+						profiler.popPush("securitycraft:extract");
+						mc.gameRenderer.extract(DeltaTracker.ONE, true);
+						profiler.popPush("securitycraft:render");
+						mc.gameRenderer.renderLevel(DeltaTracker.ONE);
+					}
+					catch (Exception e) {
+						PlayerUtils.sendMessageToPlayer(player, Utils.localize(SCContent.FRAME.get().getDescriptionId()), Utils.localize("messages.securitycraft:frame.error"), ChatFormatting.RED, true);
+						SecurityCraft.LOGGER.error("Frame feed at {} threw an exception while rendering the level. Deactivating clientside rendering for this feed", be.getBlockPos());
+						e.printStackTrace();
+						feed.close();
+					}
+
+					feed.fogRenderBuffer().rotate();
+
+					profiler.popPush("securitycraft:apply_frame_frustum");
+
+					Frustum cameraFrustum = feed.getCameraFrustum();
+
+					if (cameraFrustum != null) {
+						Frustum frustum = SectionOcclusionGraph.offsetFrustum(cameraFrustum); //This needs the frame's newly calculated frustum, so it needs to be queried from inside the loop
+
+						if (be.shouldRotate() || !feed.hasVisibleSections() || feed.requiresFrustumUpdate())
+							feed.updateVisibleSections(frustum);
+					}
+
+					profiler.pop();
+				}
+			}
+		}
+
+		securityCamera.discard();
+		mc.setCameraEntity(oldCamEntity);
+		player.setPosRaw(oldX, oldY, oldZ);
+		player.xOld = player.xo = oldXO;
+		player.yOld = player.yo = oldYO;
+		player.zOld = player.zo = oldZO;
+		player.setXRot(oldXRot);
+		player.xRotO = oldXRotO;
+		player.setYRot(oldYRot);
+		player.yRotO = oldYRotO;
+		camera.eyeHeight = oldEyeHeight;
+		camera.eyeHeightOld = oldEyeHeightO;
+		mc.options.setCameraType(oldCameraType);
+		mc.gameRenderer.setRenderBlockOutline(true);
+
+		if (oldIsPanoramicMode)
+			camera.enablePanoramicMode();
+		else
+			camera.disablePanoramicMode();
+
+		camera.update(mc.getDeltaTracker());
+		camera.attributeProbe = oldAttributeProbe;
+		mc.levelRenderer.visibleSections.clear();
+		mc.levelRenderer.visibleSections.addAll(oldVisibleSections);
+		mc.levelRenderer.skyRenderer().renderTarget = oldMainRenderTarget; //Allows the sky renderer to render to the previous main target again
+		window.setWidth(oldWidth);
+		window.setHeight(oldHeight);
+		mc.gameRenderer.mainRenderTarget = oldMainRenderTarget;
+		currentlyCapturedCamera = null;
+		//These two lines ensure that GUI rendering, which happens after frame feed capture, is done with the correct parameters
+		mc.gui.extractRenderState(partialTick, resourcesLoaded, resourcesLoaded);
+		mc.gameRenderer.extractWindow();
+	}
+
+	public static void onClientTickPost() {
+		if (hasFeeds()) {
+			Iterator<Entry<GlobalPos, CameraFeed>> feeds = FRAME_CAMERA_FEEDS.entrySet().iterator();
+
+			while (feeds.hasNext()) {
+				CameraFeed feed = feeds.next().getValue();
+
+				if (feed.isClosed()) {
+					feed.close();
+					feeds.remove();
+				}
+			}
+		}
+	}
+
+	public static void onExtractLevelRenderState(net.minecraft.client.renderer.culling.Frustum frustum) {
+
+		if (FrameFeedHandler.isCapturingCamera())
+			FrameFeedHandler.getCurrentlyCapturedFeed().setCameraFrustum(frustum);
+		else
+			FrameFeedHandler.doFeedFrustumCheck(frustum);
+	}
+
+	public static Map<GlobalPos, CameraFeed> getFeedsToRender(Minecraft mc, double currentTime) {
+		//+1 helps to reduce stuttering when many frames are active at once
+		double feedsToRender = FRAME_CAMERA_FEEDS.size() + 1;
+		double fpsCap = ConfigHandler.CLIENT.frameFeedFpsLimit.get();
+		double frameInterval = 1.0D / fpsCap;
+		double activeFramesPerMcFrame = Mth.ceil((fpsCap * feedsToRender) / mc.getFps());
+
+		if (fpsCap < 260.0D) {
+			Map<GlobalPos, CameraFeed> activeFrameCameraFeeds = new HashMap<>();
+
+			for (Entry<GlobalPos, CameraFeed> cameraView : FRAME_CAMERA_FEEDS.entrySet()) {
+				double timeBetweenFrames = frameInterval / feedsToRender;
+				double lastActiveTime = cameraView.getValue().lastActiveTime().get();
+
+				if (currentTime < lastActiveTime + frameInterval || currentTime < lastFrameRendered + timeBetweenFrames || activeFramesPerMcFrame-- <= 0)
+					continue;
+
+				cameraView.getValue().lastActiveTime().set(currentTime);
+				activeFrameCameraFeeds.put(cameraView.getKey(), cameraView.getValue());
+			}
+
+			return activeFrameCameraFeeds;
+		}
+		else
+			return FRAME_CAMERA_FEEDS;
+	}
+
+	public static void addFrameLink(FrameBlockEntity be, GlobalPos cameraPos) {
+		CameraFeed feed = FRAME_CAMERA_FEEDS.computeIfAbsent(cameraPos, FrameFeedHandler::createFeedForCamera);
+
+		feed.linkFrame(be);
+	}
+
+	private static CameraFeed createFeedForCamera(GlobalPos cameraPos) {
+		SectionPos cameraSectionPos = SectionPos.of(cameraPos.pos());
+		RenderSection startingSection = CameraViewAreaExtension.rawFetch(cameraSectionPos.x(), Mth.clamp(cameraSectionPos.y(), CameraViewAreaExtension.minSectionY(), CameraViewAreaExtension.maxSectionY() - 1), cameraSectionPos.z(), true);
+
+		return new CameraFeed(cameraPos, startingSection);
+	}
+
+	public static void removeFrameLink(GlobalPos cameraPos, FrameBlockEntity be) {
+		if (FRAME_CAMERA_FEEDS.containsKey(cameraPos))
+			FRAME_CAMERA_FEEDS.get(cameraPos).unlinkFrame(be);
+	}
+
+	public static void removeAllFrameLinks(GlobalPos cameraPos) {
+		CameraFeed feed = FRAME_CAMERA_FEEDS.remove(cameraPos);
+
+		if (feed != null)
+			feed.close();
+	}
+
+	public static boolean isCapturingCamera() {
+		return currentlyCapturedCamera != null;
+	}
+
+	public static boolean amIBeingCaptured(SecurityCameraBlockEntity be) {
+		return isCapturingCamera() && currentlyCapturedCamera.pos().equals(be.getBlockPos());
+	}
+
+	public static boolean shouldAddChunk(ChunkPos pos, int renderDistance) {
+		for (GlobalPos cameraPos : FRAME_CAMERA_FEEDS.keySet()) {
+			if (pos.getChessboardDistance(ChunkPos.containing(cameraPos.pos())) <= (renderDistance + 1))
+				return true;
+		}
+
+		return false;
+	}
+
+	public static void doFeedFrustumCheck(Frustum playerFrustum) {
+		for (CameraFeed feed : FRAME_CAMERA_FEEDS.values()) {
+			feed.updateHasFrameInFrustum(playerFrustum);
+		}
+	}
+
+	public static boolean hasFeeds() {
+		return !FRAME_CAMERA_FEEDS.isEmpty();
+	}
+
+	public static boolean hasFeed(GlobalPos cameraPos) {
+		return FRAME_CAMERA_FEEDS.containsKey(cameraPos);
+	}
+
+	public static CameraFeed getFeed(GlobalPos cameraPos) {
+		return FRAME_CAMERA_FEEDS.get(cameraPos);
+	}
+
+	public static void removeAllFeeds() {
+		for (CameraFeed feed : FRAME_CAMERA_FEEDS.values()) {
+			feed.close();
+		}
+
+		FRAME_CAMERA_FEEDS.clear();
+	}
+
+	public static CameraFeed getCurrentlyCapturedFeed() {
+		return isCapturingCamera() ? getFeed(currentlyCapturedCamera) : null;
+	}
+
+	public static int getFrameFeedViewDistance(FrameBlockEntity be) {
+		int frameSpecificRenderDistance = be == null ? 32 : be.getChunkLoadingDistanceOption();
+
+		return Math.min(frameSpecificRenderDistance, Math.min(ConfigHandler.CLIENT.frameFeedRenderDistance.get(), Math.min(ConfigHandler.SERVER.frameFeedViewDistance.get(), Minecraft.getInstance().options.getEffectiveRenderDistance())));
+	}
+}

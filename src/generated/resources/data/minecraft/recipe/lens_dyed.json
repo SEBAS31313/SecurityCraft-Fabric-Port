@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_dye",
+  "dye": "#minecraft:dyes",
+  "group": "lens",
+  "result": {
+    "id": "securitycraft:lens"
+  },
+  "target": "securitycraft:lens"
+}

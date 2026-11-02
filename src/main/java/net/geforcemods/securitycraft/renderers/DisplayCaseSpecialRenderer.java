@@ -1,0 +1,58 @@
+package net.geforcemods.securitycraft.renderers;
+
+import java.util.Optional;
+import java.util.function.Consumer;
+
+import org.joml.Vector3fc;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import net.geforcemods.securitycraft.ClientHandler;
+import net.geforcemods.securitycraft.models.DisplayCaseModel;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.special.NoDataSpecialModelRenderer;
+import net.minecraft.client.renderer.special.SpecialModelRenderer;
+import net.minecraft.resources.Identifier;
+
+public record DisplayCaseSpecialRenderer(DisplayCaseModel model, Identifier texture, float openness, Optional<Integer> light) implements NoDataSpecialModelRenderer {
+	@Override
+	public void submit(PoseStack pose, SubmitNodeCollector collector, int lightCoords, int overlayCoords, boolean hasFoil, int outlineColor) {
+		collector.submitModel(model, openness, pose, RenderTypes.entityCutout(texture), light.orElse(lightCoords), overlayCoords, outlineColor, null);
+	}
+
+	@Override
+	public void getExtents(Consumer<Vector3fc> extents) {
+		PoseStack poseStack = new PoseStack();
+
+		model.setupAnim(openness);
+		model.root().getExtentsForGui(poseStack, extents);
+	}
+
+	public record Unbaked(Identifier texture, float openness, Optional<Integer> light) implements SpecialModelRenderer.Unbaked<Void> {
+
+		//@formatter:off
+		public static final MapCodec<DisplayCaseSpecialRenderer.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
+				i -> i.group(
+						Identifier.CODEC.fieldOf("texture").forGetter(DisplayCaseSpecialRenderer.Unbaked::texture),
+						Codec.FLOAT.optionalFieldOf("openness", 0.0F).forGetter(DisplayCaseSpecialRenderer.Unbaked::openness),
+						Codec.INT.optionalFieldOf("light").forGetter(DisplayCaseSpecialRenderer.Unbaked::light))
+				.apply(i, DisplayCaseSpecialRenderer.Unbaked::new));
+
+		//@formatter:on
+		@Override
+		public MapCodec<DisplayCaseSpecialRenderer.Unbaked> type() {
+			return MAP_CODEC;
+		}
+
+		@Override
+		public SpecialModelRenderer<Void> bake(BakingContext ctx) {
+			DisplayCaseModel model = new DisplayCaseModel(ctx.entityModelSet().bakeLayer(ClientHandler.DISPLAY_CASE_LOCATION));
+
+			return new DisplayCaseSpecialRenderer(model, texture.withPrefix("textures/entity/display_case/").withSuffix(".png"), openness, light);
+		}
+	}
+}

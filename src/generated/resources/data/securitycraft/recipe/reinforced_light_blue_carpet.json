@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "securitycraft:reinforced_carpets",
+  "key": {
+    "M": "securitycraft:reinforced_light_blue_wool"
+  },
+  "pattern": [
+    "MM"
+  ],
+  "result": {
+    "count": 3,
+    "id": "securitycraft:reinforced_light_blue_carpet"
+  }
+}

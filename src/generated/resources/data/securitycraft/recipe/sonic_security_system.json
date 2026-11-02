@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "D": "minecraft:bowl",
+    "I": "minecraft:iron_block",
+    "R": "securitycraft:portable_radar",
+    "S": "minecraft:stick"
+  },
+  "pattern": [
+    " RD",
+    " S ",
+    " I "
+  ],
+  "result": {
+    "id": "securitycraft:sonic_security_system"
+  }
+}

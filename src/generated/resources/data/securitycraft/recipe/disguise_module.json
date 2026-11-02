@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "securitycraft:modules",
+  "key": {
+    "I": "#c:ingots/iron",
+    "P": "minecraft:paper",
+    "S": "minecraft:painting"
+  },
+  "pattern": [
+    "III",
+    "IPI",
+    "ISI"
+  ],
+  "result": {
+    "id": "securitycraft:disguise_module"
+  }
+}

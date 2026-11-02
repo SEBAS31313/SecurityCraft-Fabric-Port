@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "category": "blocks",
+  "experience": 0.1,
+  "ingredient": "securitycraft:reinforced_nether_bricks",
+  "result": {
+    "id": "securitycraft:reinforced_cracked_nether_bricks"
+  }
+}
